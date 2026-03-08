@@ -261,12 +261,13 @@ button {
 @media (min-width: 900px) {
   .arcade-shell {
     grid-template-columns: 1fr 1.35fr;
-    align-items: start;
+    align-items: stretch;
     margin-top: 40px;
   }
 
   .hud-card,
   .game-card {
     min-height: 520px;
+    height: 100%;
   }
 }

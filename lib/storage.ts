@@ -1,7 +1,8 @@
-import { DEFAULT_MODE, DEFAULT_PLAYER_NAME, GameMode } from "@/lib/game";
+import { DEFAULT_MODE, DEFAULT_PLAYER_NAME, DEFAULT_SOUND_PROFILE, GameMode, SoundProfile } from "@/lib/game";
 
 const PLAYER_KEY = "oa_player_name";
 const MODE_KEY = "oa_game_mode";
+const SOUND_PROFILE_KEY = "oa_sound_profile";
 
 const scoreKey = (playerName: string, mode: GameMode) => `oa_high_score:${playerName}:${mode}`;
 
@@ -23,6 +24,7 @@ const isStorageAvailable = (): boolean => {
 const scoreMemory = new Map<string, number>();
 let playerMemory = DEFAULT_PLAYER_NAME;
 let modeMemory: GameMode = DEFAULT_MODE;
+let soundProfileMemory: SoundProfile = DEFAULT_SOUND_PROFILE;
 
 export const getPlayerName = (): string => {
   if (!isStorageAvailable()) {
@@ -62,6 +64,25 @@ export const setGameMode = (mode: GameMode): GameMode => {
 
   window.localStorage.setItem(MODE_KEY, mode);
   return mode;
+};
+
+export const getSoundProfile = (): SoundProfile => {
+  if (!isStorageAvailable()) {
+    return soundProfileMemory;
+  }
+
+  const soundProfile = window.localStorage.getItem(SOUND_PROFILE_KEY);
+  return soundProfile === "synth" ? "synth" : "piano";
+};
+
+export const setSoundProfile = (soundProfile: SoundProfile): SoundProfile => {
+  if (!isStorageAvailable()) {
+    soundProfileMemory = soundProfile;
+    return soundProfile;
+  }
+
+  window.localStorage.setItem(SOUND_PROFILE_KEY, soundProfile);
+  return soundProfile;
 };
 
 export const getHighScore = (playerName: string, mode: GameMode): number => {

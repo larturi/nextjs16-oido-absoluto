@@ -1,4 +1,5 @@
 export type GameMode = "easy" | "hard";
+export type SoundProfile = "piano" | "synth";
 
 export type NoteId =
   | "do"
@@ -28,6 +29,12 @@ export type GameModeOption = {
   hint: string;
 };
 
+export type SoundProfileOption = {
+  id: SoundProfile;
+  label: string;
+  hint: string;
+};
+
 const ALL_NOTES: NoteConfig[] = [
   { id: "do", label: "Do", audioSrc: "/audio/notes/do.wav" },
   { id: "doSharp", label: "Do#", audioSrc: "/audio/notes/do-sharp.wav" },
@@ -47,10 +54,16 @@ const EASY_NOTE_IDS: NoteId[] = ["do", "re", "mi", "fa", "sol", "la", "si"];
 
 export const DEFAULT_PLAYER_NAME = "Invitado";
 export const DEFAULT_MODE: GameMode = "easy";
+export const DEFAULT_SOUND_PROFILE: SoundProfile = "piano";
 
 export const MODE_OPTIONS: GameModeOption[] = [
   { id: "easy", label: "Normal", hint: "Notas naturales" },
   { id: "hard", label: "Dificil", hint: "Incluye sostenidos" },
+];
+
+export const SOUND_PROFILE_OPTIONS: SoundProfileOption[] = [
+  { id: "piano", label: "Piano", hint: "Sonido clasico" },
+  { id: "synth", label: "Synth", hint: "Sonido arcade" },
 ];
 
 export const getNotesForMode = (mode: GameMode): NoteConfig[] => {
@@ -65,6 +78,14 @@ export const pickRandomNote = (notes: NoteConfig[], excludeId?: NoteId): NoteCon
   const pool = excludeId ? notes.filter((note) => note.id !== excludeId) : notes;
   const index = Math.floor(Math.random() * pool.length);
   return pool[index];
+};
+
+export const getAudioSrcForNote = (note: NoteConfig, soundProfile: SoundProfile): string => {
+  if (soundProfile === "piano") {
+    return note.audioSrc;
+  }
+
+  return note.audioSrc.replace("/audio/notes/", "/audio/notes-synth/");
 };
 
 export const resolveRound = (expected: NoteId, guess: NoteId): RoundResult => {

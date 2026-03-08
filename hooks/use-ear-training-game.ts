@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_MODE,
   DEFAULT_PLAYER_NAME,
+  DEFAULT_SOUND_PROFILE,
   feedbackText,
+  getAudioSrcForNote,
   GameMode,
   getNotesForMode,
   MODE_OPTIONS,
@@ -13,8 +15,19 @@ import {
   pickRandomNote,
   resolveRound,
   RoundResult,
+  SOUND_PROFILE_OPTIONS,
+  SoundProfile,
 } from "@/lib/game";
-import { getGameMode, getHighScore, getPlayerName, setGameMode, setHighScore, setPlayerName } from "@/lib/storage";
+import {
+  getGameMode,
+  getHighScore,
+  getPlayerName,
+  getSoundProfile,
+  setGameMode,
+  setHighScore,
+  setPlayerName,
+  setSoundProfile,
+} from "@/lib/storage";
 
 type AudioBank = {
   notes: Map<NoteId, HTMLAudioElement>;
@@ -24,11 +37,11 @@ type AudioBank = {
 
 const PRELOAD = "auto";
 
-const buildAudioBank = (notes: NoteConfig[]): AudioBank => {
+const buildAudioBank = (notes: NoteConfig[], soundProfile: SoundProfile): AudioBank => {
   const noteMap = new Map<NoteId, HTMLAudioElement>();
 
   for (const note of notes) {
-    const audio = new Audio(note.audioSrc);
+    const audio = new Audio(getAudioSrcForNote(note, soundProfile));
     audio.preload = PRELOAD;
     noteMap.set(note.id, audio);
   }
@@ -46,6 +59,7 @@ export const useEarTrainingGame = () => {
   const [playerName, setPlayerNameState] = useState(DEFAULT_PLAYER_NAME);
   const [nameDraft, setNameDraft] = useState(DEFAULT_PLAYER_NAME);
   const [mode, setMode] = useState<GameMode>(DEFAULT_MODE);
+  const [soundProfile, setSoundProfileState] = useState<SoundProfile>(DEFAULT_SOUND_PROFILE);
   const [highScore, setHighScoreState] = useState(0);
 
   const [score, setScore] = useState(0);
@@ -62,19 +76,21 @@ export const useEarTrainingGame = () => {
   useEffect(() => {
     const loadedName = getPlayerName();
     const loadedMode = getGameMode();
+    const loadedSoundProfile = getSoundProfile();
 
     setPlayerNameState(loadedName);
     setNameDraft(loadedName);
     setMode(loadedMode);
+    setSoundProfileState(loadedSoundProfile);
     setHighScoreState(getHighScore(loadedName, loadedMode));
   }, []);
 
   useEffect(() => {
-    audioBankRef.current = buildAudioBank(notes);
+    audioBankRef.current = buildAudioBank(notes, soundProfile);
     return () => {
       audioBankRef.current = null;
     };
-  }, [notes]);
+  }, [notes, soundProfile]);
 
   const playNote = useCallback(async (noteId: NoteId) => {
     const bank = audioBankRef.current;
@@ -190,6 +206,14 @@ export const useEarTrainingGame = () => {
     [mode, playerName, resetScore],
   );
 
+  const changeSoundProfile = useCallback((nextSoundProfile: SoundProfile) => {
+    if (nextSoundProfile === soundProfile) {
+      return;
+    }
+
+    setSoundProfileState(setSoundProfile(nextSoundProfile));
+  }, [soundProfile]);
+
   const accuracy = useMemo(() => {
     if (attempts === 0) {
       return 0;
@@ -203,6 +227,8 @@ export const useEarTrainingGame = () => {
   return {
     mode,
     modeOptions: MODE_OPTIONS,
+    soundProfile,
+    soundProfileOptions: SOUND_PROFILE_OPTIONS,
     notes,
     playerName,
     nameDraft,
@@ -218,6 +244,7 @@ export const useEarTrainingGame = () => {
     setNameDraft,
     savePlayer,
     changeMode,
+    changeSoundProfile,
     playOrNext,
     submitGuess,
     resetScore,

@@ -14,7 +14,18 @@ export function EarTrainingGame() {
           <h1>Entrena jugando con notas musicales</h1>
         </div>
 
-        <ModeSwitch value={game.mode} options={game.modeOptions} onChange={game.changeMode} />
+        <ModeSwitch
+          value={game.mode}
+          options={game.modeOptions}
+          onChange={game.changeMode}
+          ariaLabel="Modo de dificultad"
+        />
+        <ModeSwitch
+          value={game.soundProfile}
+          options={game.soundProfileOptions}
+          onChange={game.changeSoundProfile}
+          ariaLabel="Tipo de sonido"
+        />
 
         <label className="player-input" htmlFor="playerName">
           Jugador

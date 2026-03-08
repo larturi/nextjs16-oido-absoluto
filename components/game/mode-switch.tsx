@@ -1,16 +1,21 @@
 "use client";
 
-import { GameMode, GameModeOption } from "@/lib/game";
-
-type ModeSwitchProps = {
-  value: GameMode;
-  options: GameModeOption[];
-  onChange: (mode: GameMode) => void;
+type ToggleOption<T extends string> = {
+  id: T;
+  label: string;
+  hint: string;
 };
 
-export function ModeSwitch({ value, options, onChange }: ModeSwitchProps) {
+type ModeSwitchProps<T extends string> = {
+  value: T;
+  options: ToggleOption<T>[];
+  onChange: (value: T) => void;
+  ariaLabel: string;
+};
+
+export function ModeSwitch<T extends string>({ value, options, onChange, ariaLabel }: ModeSwitchProps<T>) {
   return (
-    <div className="mode-switch" role="group" aria-label="Modo de dificultad">
+    <div className="mode-switch" role="group" aria-label={ariaLabel}>
       {options.map((option) => (
         <button
           key={option.id}
