@@ -1,5 +1,9 @@
+import { DEFAULT_MODE, DEFAULT_PLAYER_NAME, GameMode } from "@/lib/game";
+
 const PLAYER_KEY = "oa_player_name";
-const scoreKey = (playerName: string) => `oa_high_score:${playerName}`;
+const MODE_KEY = "oa_game_mode";
+
+const scoreKey = (playerName: string, mode: GameMode) => `oa_high_score:${playerName}:${mode}`;
 
 const isStorageAvailable = (): boolean => {
   if (typeof window === "undefined") {
@@ -17,7 +21,8 @@ const isStorageAvailable = (): boolean => {
 };
 
 const scoreMemory = new Map<string, number>();
-let playerMemory = "Invitado";
+let playerMemory = DEFAULT_PLAYER_NAME;
+let modeMemory: GameMode = DEFAULT_MODE;
 
 export const getPlayerName = (): string => {
   if (!isStorageAvailable()) {
@@ -25,11 +30,11 @@ export const getPlayerName = (): string => {
   }
 
   const name = window.localStorage.getItem(PLAYER_KEY);
-  return name?.trim() ? name : "Invitado";
+  return name?.trim() ? name : DEFAULT_PLAYER_NAME;
 };
 
 export const setPlayerName = (name: string): string => {
-  const safeName = name.trim() || "Invitado";
+  const safeName = name.trim() || DEFAULT_PLAYER_NAME;
 
   if (!isStorageAvailable()) {
     playerMemory = safeName;
@@ -40,24 +45,46 @@ export const setPlayerName = (name: string): string => {
   return safeName;
 };
 
-export const getHighScore = (playerName: string): number => {
+export const getGameMode = (): GameMode => {
   if (!isStorageAvailable()) {
-    return scoreMemory.get(playerName) ?? 0;
+    return modeMemory;
   }
 
-  const raw = window.localStorage.getItem(scoreKey(playerName));
+  const mode = window.localStorage.getItem(MODE_KEY);
+  return mode === "hard" ? "hard" : "easy";
+};
+
+export const setGameMode = (mode: GameMode): GameMode => {
+  if (!isStorageAvailable()) {
+    modeMemory = mode;
+    return mode;
+  }
+
+  window.localStorage.setItem(MODE_KEY, mode);
+  return mode;
+};
+
+export const getHighScore = (playerName: string, mode: GameMode): number => {
+  const key = scoreKey(playerName, mode);
+
+  if (!isStorageAvailable()) {
+    return scoreMemory.get(key) ?? 0;
+  }
+
+  const raw = window.localStorage.getItem(key);
   const parsed = Number(raw);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 };
 
-export const setHighScore = (playerName: string, score: number): number => {
+export const setHighScore = (playerName: string, mode: GameMode, score: number): number => {
   const safeScore = Math.max(0, Math.floor(score));
+  const key = scoreKey(playerName, mode);
 
   if (!isStorageAvailable()) {
-    scoreMemory.set(playerName, safeScore);
+    scoreMemory.set(key, safeScore);
     return safeScore;
   }
 
-  window.localStorage.setItem(scoreKey(playerName), String(safeScore));
+  window.localStorage.setItem(key, String(safeScore));
   return safeScore;
 };

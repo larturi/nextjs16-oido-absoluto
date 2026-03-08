@@ -1,23 +1,25 @@
 # Oido Absoluto Arcade
 
-Juego para entrenar oido musical con notas naturales (Do, Re, Mi, Fa, Sol, La, Si).
+Juego web para entrenar oido musical adivinando notas.
 
 ## Ejecutar
 
 ```bash
-npm install
+npm install --no-fund --no-audit --cache .npm-cache
 npm run dev
 ```
 
 Abrir `http://localhost:3000`.
 
-## Funcionalidades v1
+## Funcionalidades
 
 - Modo infinito por rondas
-- Reproduce una nota y el jugador adivina
+- Boton inteligente: escuchar, repetir o pasar a la siguiente
+- Dificultad `Normal`: notas naturales (Do, Re, Mi, Fa, Sol, La, Si)
+- Dificultad `Dificil`: incluye sostenidos (Do#, Re#, Fa#, Sol#, La#)
 - Feedback inmediato visual + sonido + mensaje
 - Puntaje, racha y precision
-- Record local por jugador con `localStorage`
+- Record local por jugador y por modo de dificultad
 - Responsive para movil y desktop
 
 ## Audios
