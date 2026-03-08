@@ -1,0 +1,245 @@
+@import url("https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&family=Bungee&display=swap");
+
+:root {
+  --bg-deep: #090d20;
+  --bg-mid: #11183a;
+  --bg-sheen: #0d3053;
+  --surface-1: rgba(8, 13, 31, 0.74);
+  --surface-2: rgba(17, 22, 47, 0.85);
+  --line-soft: rgba(116, 173, 255, 0.25);
+  --line-hard: rgba(116, 173, 255, 0.5);
+  --text-main: #eff4ff;
+  --text-dim: #b6c4ec;
+  --accent-core: #29f0ff;
+  --accent-hot: #ff3ea5;
+  --positive: #39f59b;
+  --negative: #ff7d95;
+  --font-display: "Bungee", "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-body: "Baloo 2", "Trebuchet MS", "Segoe UI", sans-serif;
+  --space: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--text-main);
+  background:
+    radial-gradient(circle at 80% 20%, rgba(255, 62, 165, 0.2) 0%, transparent 42%),
+    radial-gradient(circle at 12% 82%, rgba(41, 240, 255, 0.22) 0%, transparent 45%),
+    linear-gradient(150deg, var(--bg-deep), var(--bg-mid) 50%, var(--bg-sheen));
+}
+
+.arcade-shell {
+  width: min(1120px, 100% - 24px);
+  margin: 24px auto;
+  display: grid;
+  gap: 16px;
+}
+
+.hud-card,
+.game-card {
+  border: 1px solid var(--line-soft);
+  background: linear-gradient(165deg, var(--surface-1), var(--surface-2));
+  border-radius: 24px;
+  padding: 20px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 18px 52px rgba(0, 0, 0, 0.34);
+}
+
+.hud-card {
+  display: grid;
+  gap: 18px;
+}
+
+.overline {
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-core);
+  margin: 0 0 6px;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2vw, 2rem);
+  margin: 0;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.player-input {
+  display: grid;
+  gap: 6px;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+.player-input div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.player-save {
+  border-color: rgba(41, 240, 255, 0.46);
+  background: linear-gradient(125deg, rgba(41, 240, 255, 0.32), rgba(255, 62, 165, 0.26));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 0 10px rgba(41, 240, 255, 0.25);
+  font-weight: 700;
+  padding: 10px 14px;
+  line-height: 1.2;
+  width: 100%;
+  flex: 1 1 140px;
+}
+
+.player-save:hover {
+  border-color: rgba(41, 240, 255, 0.78);
+  transform: translateY(-1px);
+}
+
+input {
+  border: 1px solid var(--line-soft);
+  background: rgba(6, 12, 29, 0.86);
+  color: var(--text-main);
+  border-radius: 12px;
+  font: inherit;
+  padding: 10px 12px;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent-core);
+  outline-offset: 2px;
+}
+
+button {
+  font: inherit;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: var(--text-main);
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.stats-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.stats-grid article {
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(10, 14, 34, 0.88);
+}
+
+.stats-grid span {
+  display: block;
+  color: var(--text-dim);
+  font-size: 0.86rem;
+}
+
+.stats-grid strong {
+  font-family: var(--font-display);
+  font-size: 1.32rem;
+}
+
+.game-card {
+  display: grid;
+  gap: 14px;
+}
+
+.round-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.round-actions button {
+  width: 100%;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.cta {
+  border-color: rgba(41, 240, 255, 0.5);
+  background: linear-gradient(120deg, rgba(41, 240, 255, 0.27), rgba(255, 62, 165, 0.23));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0 14px rgba(41, 240, 255, 0.32);
+}
+
+.ghost {
+  border-color: var(--line-soft);
+  background: rgba(8, 13, 31, 0.5);
+}
+
+.feedback {
+  margin: 0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft);
+  background: rgba(10, 14, 34, 0.7);
+}
+
+.feedback.correct {
+  border-color: rgba(57, 245, 155, 0.55);
+  color: #ceffe8;
+}
+
+.feedback.wrong {
+  border-color: rgba(255, 125, 149, 0.55);
+  color: #ffd8df;
+}
+
+.pads-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.note-pad {
+  min-height: 88px;
+  border: 1px solid var(--line-hard);
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  background: linear-gradient(160deg, rgba(17, 24, 58, 0.95), rgba(11, 14, 36, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 12px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.12s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.note-pad:not(:disabled):hover {
+  transform: translateY(-2px) scale(1.01);
+  border-color: rgba(41, 240, 255, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 0 18px rgba(41, 240, 255, 0.26);
+}
+
+.note-pad:disabled {
+  opacity: 0.44;
+  cursor: not-allowed;
+}
+
+@media (min-width: 900px) {
+  .arcade-shell {
+    grid-template-columns: 1fr 1.35fr;
+    align-items: start;
+    margin-top: 40px;
+  }
+
+  .hud-card,
+  .game-card {
+    min-height: 520px;
+  }
+}
