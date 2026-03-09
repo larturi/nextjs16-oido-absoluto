@@ -259,10 +259,18 @@ button {
 }
 
 @media (min-width: 900px) {
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
   .arcade-shell {
     grid-template-columns: 1fr 1.35fr;
     align-items: stretch;
-    margin-top: 40px;
+    margin: 0;
   }
 
   .hud-card,
