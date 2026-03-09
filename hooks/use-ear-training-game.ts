@@ -69,6 +69,7 @@ export const useEarTrainingGame = () => {
   const [currentNote, setCurrentNote] = useState<NoteConfig | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [hasPlayedRound, setHasPlayedRound] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const notes = useMemo(() => getNotesForMode(mode), [mode]);
   const audioBankRef = useRef<AudioBank | null>(null);
@@ -104,6 +105,13 @@ export const useEarTrainingGame = () => {
     }
 
     audio.currentTime = 0;
+    setIsPlaying(true);
+
+    const onEnded = () => {
+      setIsPlaying(false);
+      audio.removeEventListener("ended", onEnded);
+    };
+    audio.addEventListener("ended", onEnded);
 
     try {
       await audio.play();
@@ -239,6 +247,7 @@ export const useEarTrainingGame = () => {
     lastResult,
     hasPlayedRound,
     isAnswered,
+    isPlaying,
     feedback: feedbackText(lastResult, currentNote),
     listenLabel,
     setNameDraft,

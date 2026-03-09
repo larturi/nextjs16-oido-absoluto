@@ -63,7 +63,7 @@ export function EarTrainingGame() {
         </div>
       </section>
 
-      <section className="game-card" aria-live="polite">
+      <section className={`game-card ${game.isPlaying ? "playing" : ""}`} aria-live="polite">
         <div className="round-actions">
           <button className="cta" type="button" onClick={game.playOrNext}>
             {game.listenLabel}
