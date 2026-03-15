@@ -74,3 +74,8 @@
 - 2026-03-15: refinamiento visual del piano: teclas negras siempre visibles, mas largas y con negro de alto contraste.
 - 2026-03-15: simplificacion UX, eliminando selector Pads/Piano para dejar teclado de piano como interfaz unica.
 - 2026-03-15: ajuste visual extra del piano con teclas negras aun mas largas (mobile + desktop).
+- 2026-03-15: mejora responsive de interfaz de notas: pads en mobile y piano en desktop automaticamente.
+- 2026-03-15: recalibracion visual del piano en desktop (más alto, con negras más cortas que las blancas).
+- 2026-03-15: ajuste de layout para que el piano en desktop ocupe todo el alto disponible del contenedor de juego.
+- 2026-03-15: ajuste de encastre desktop: mantiene acciones+feedback arriba y el piano llena solo el bloque inferior.
+- 2026-03-15: ajuste de proporciones desktop: piano ~30% menos alto y mayor presencia para acciones+feedback.

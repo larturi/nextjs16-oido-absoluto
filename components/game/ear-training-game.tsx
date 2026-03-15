@@ -112,11 +112,27 @@ export function EarTrainingGame() {
 
         <p className={`feedback ${game.lastResult}`}>{game.feedback}</p>
 
-        <PianoKeyboard
-          notes={game.notes}
-          onPress={game.submitGuess}
-          disabled={!game.hasPlayedRound || game.isAnswered || game.status === "over" || game.isPlaying}
-        />
+        <div className="note-ui note-ui-piano">
+          <PianoKeyboard
+            notes={game.notes}
+            onPress={game.submitGuess}
+            disabled={!game.hasPlayedRound || game.isAnswered || game.status === "over" || game.isPlaying}
+          />
+        </div>
+
+        <div className="note-ui note-ui-pads" role="group" aria-label="Botones de notas">
+          {game.notes.map((note) => (
+            <button
+              key={note.id}
+              type="button"
+              className="note-pad"
+              onClick={() => game.submitGuess(note.id)}
+              disabled={!game.hasPlayedRound || game.isAnswered || game.status === "over" || game.isPlaying}
+            >
+              {note.label}
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="progress-panel progress-panel-wide" aria-label="Progreso del jugador">
