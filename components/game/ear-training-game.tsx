@@ -37,7 +37,11 @@ export function EarTrainingGame() {
               onBlur={game.savePlayer}
               maxLength={24}
             />
-            <button className="player-save" type="button" onClick={game.savePlayer}>
+            <button
+              className="player-save"
+              type="button"
+              onClick={game.savePlayer}
+            >
               Guardar
             </button>
           </div>
@@ -57,13 +61,36 @@ export function EarTrainingGame() {
             <strong>{game.accuracy}%</strong>
           </article>
           <article>
-            <span>Record de {game.playerName}</span>
+            <span>Vidas</span>
+            <strong>{game.lives}</strong>
+          </article>
+          <article>
+            <span>Combo</span>
+            <strong>x{game.combo}</strong>
+          </article>
+          <article>
+            <span>Multiplicador</span>
+            <strong>x{game.multiplier}</strong>
+          </article>
+          <article>
+            <span>Nivel</span>
+            <strong>{game.mode === "hard" ? game.level : "Base"}</strong>
+          </article>
+          <article>
+            <span>Record</span>
             <strong>{game.highScore}</strong>
           </article>
         </div>
+        {game.mode === "hard" && game.pointsToNextLevel !== null && (
+          <p className="level-progress">
+            {game.pointsToNextLevel === 0
+              ? "Objetivo del nivel alcanzado."
+              : `Faltan ${game.pointsToNextLevel} puntos para el siguiente nivel.`}
+          </p>
+        )}
       </section>
 
-      <section className={`game-card ${game.isPlaying ? "playing" : ""}`} aria-live="polite">
+      <section className="game-card" aria-live="polite">
         <div className="round-actions">
           <button className="cta" type="button" onClick={game.playOrNext}>
             {game.listenLabel}
@@ -83,7 +110,11 @@ export function EarTrainingGame() {
               type="button"
               className="note-pad"
               onClick={() => game.submitGuess(note.id)}
-              disabled={!game.hasPlayedRound || game.isAnswered}
+              disabled={
+                !game.hasPlayedRound ||
+                game.isAnswered ||
+                game.status === "over"
+              }
             >
               {note.label}
             </button>

@@ -164,7 +164,7 @@ button {
 .stats-grid {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
 }
 
 .stats-grid article {
@@ -183,6 +183,12 @@ button {
 .stats-grid strong {
   font-family: var(--font-display);
   font-size: 1.32rem;
+}
+
+.level-progress {
+  margin: 2px 0 0;
+  color: var(--text-dim);
+  font-size: 0.9rem;
 }
 
 .game-card {
