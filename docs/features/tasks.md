@@ -69,3 +69,8 @@
 - 2026-03-15: fix de modo Memoria (reproduccion secuencial sin solaparse + validacion por secuencia completa).
 - 2026-03-15: fix de input en Memoria para reproducir la nota inmediatamente al presionar cada boton.
 - 2026-03-15: ajuste de layout desktop para eliminar scroll interno en el primer contenedor (HUD) con densidad compacta.
+- 2026-03-15: interfaz de notas mejorada con teclado de piano (toggle Pads/Piano) y estilos responsivos.
+- 2026-03-15: fix visual del teclado piano para mostrar y posicionar claramente teclas negras en modo dificil.
+- 2026-03-15: refinamiento visual del piano: teclas negras siempre visibles, mas largas y con negro de alto contraste.
+- 2026-03-15: simplificacion UX, eliminando selector Pads/Piano para dejar teclado de piano como interfaz unica.
+- 2026-03-15: ajuste visual extra del piano con teclas negras aun mas largas (mobile + desktop).

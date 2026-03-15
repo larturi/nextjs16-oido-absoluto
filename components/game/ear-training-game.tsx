@@ -1,6 +1,7 @@
 "use client";
 
 import { ModeSwitch } from "@/components/game/mode-switch";
+import { PianoKeyboard } from "@/components/game/piano-keyboard";
 import { useEarTrainingGame } from "@/hooks/use-ear-training-game";
 
 export function EarTrainingGame() {
@@ -111,19 +112,11 @@ export function EarTrainingGame() {
 
         <p className={`feedback ${game.lastResult}`}>{game.feedback}</p>
 
-        <div className="pads-grid" role="group" aria-label="Botones de notas">
-          {game.notes.map((note) => (
-            <button
-              key={note.id}
-              type="button"
-              className="note-pad"
-              onClick={() => game.submitGuess(note.id)}
-              disabled={!game.hasPlayedRound || game.isAnswered || game.status === "over" || game.isPlaying}
-            >
-              {note.label}
-            </button>
-          ))}
-        </div>
+        <PianoKeyboard
+          notes={game.notes}
+          onPress={game.submitGuess}
+          disabled={!game.hasPlayedRound || game.isAnswered || game.status === "over" || game.isPlaying}
+        />
       </section>
 
       <section className="progress-panel progress-panel-wide" aria-label="Progreso del jugador">
