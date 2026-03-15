@@ -11,11 +11,18 @@ type ModeSwitchProps<T extends string> = {
   options: ToggleOption<T>[];
   onChange: (value: T) => void;
   ariaLabel: string;
+  className?: string;
 };
 
-export function ModeSwitch<T extends string>({ value, options, onChange, ariaLabel }: ModeSwitchProps<T>) {
+export function ModeSwitch<T extends string>({
+  value,
+  options,
+  onChange,
+  ariaLabel,
+  className,
+}: ModeSwitchProps<T>) {
   return (
-    <div className="mode-switch" role="group" aria-label={ariaLabel}>
+    <div className={`mode-switch ${className ?? ""}`.trim()} role="group" aria-label={ariaLabel}>
       {options.map((option) => (
         <button
           key={option.id}

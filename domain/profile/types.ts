@@ -1,3 +1,4 @@
+import { PlayMode } from "@/domain/game/modes";
 import { GameMode, SoundProfile } from "@/lib/game";
 
 export type PlayerProfile = {
@@ -7,6 +8,7 @@ export type PlayerProfile = {
   updatedAt: string;
   preferredMode: GameMode;
   preferredSound: SoundProfile;
+  preferredPlayMode: PlayMode;
 };
 
 export type ModeStats = {

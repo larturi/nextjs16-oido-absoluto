@@ -10,9 +10,9 @@
 
 ## Epic 2: Modos de Juego
 
-- [ ] T2.1 Refactor de modo actual a contrato comun `GameModeHandler`.
-- [ ] T2.2 Implementar modo `memory-sequence`.
-- [ ] T2.3 Implementar modo `interval-guess`.
+- [x] T2.1 Refactor de modo actual a contrato comun `GameModeHandler`.
+- [x] T2.2 Implementar modo `memory-sequence`.
+- [x] T2.3 Implementar modo `interval-guess`.
 - [x] T2.4 Selector de modo en UI con estado persistido.
 - [ ] T2.5 Tests de integracion por modo.
 
@@ -40,14 +40,6 @@
 - [ ] T5.4 Opciones de audio en configuracion (volumen nota/sfx).
 - [ ] T5.5 Tests de integracion de flujo sonoro.
 
-## Epic 6: Calidad y Release
-
-- [ ] T6.1 Agregar test e2e de partida completa (playwright o equivalente).
-- [ ] T6.2 Agregar telemetria local basica (eventos clave).
-- [ ] T6.3 Definir checklist QA manual (mobile + desktop).
-- [ ] T6.4 Hardening de accesibilidad (foco, aria-live, contraste).
-- [ ] T6.5 Versionar release notes v3.
-
 ## Orden de Implementacion Recomendado
 
 1. Epic 1 (base de reglas)
@@ -73,3 +65,7 @@
 - 2026-03-15: completadas T3.4 y T3.5 con dashboard de progreso y tests de repositorio/migracion.
 - 2026-03-15: ajuste UX de layout sin scroll vertical, moviendo progreso a un tercer bloque de ancho completo.
 - 2026-03-15: layout desktop centrado (horizontal y vertical) para los tres bloques principales.
+- 2026-03-15: completadas T2.1, T2.2 y T2.3 con contrato `GameModeHandler` y nuevos modos Clasico/Memoria/Intervalos.
+- 2026-03-15: fix de modo Memoria (reproduccion secuencial sin solaparse + validacion por secuencia completa).
+- 2026-03-15: fix de input en Memoria para reproducir la nota inmediatamente al presionar cada boton.
+- 2026-03-15: ajuste de layout desktop para eliminar scroll interno en el primer contenedor (HUD) con densidad compacta.

@@ -26,6 +26,13 @@ export function EarTrainingGame() {
           onChange={game.changeSoundProfile}
           ariaLabel="Tipo de sonido"
         />
+        <ModeSwitch
+          value={game.playMode}
+          options={game.playModeOptions}
+          onChange={game.changePlayMode}
+          ariaLabel="Modo de juego"
+          className="mode-switch-3"
+        />
 
         <label className="player-input" htmlFor="playerName">
           Jugador
@@ -91,7 +98,7 @@ export function EarTrainingGame() {
 
       </section>
 
-      <section className="game-card" aria-live="polite">
+      <section className={`game-card ${game.isPlaying ? "playing" : ""}`} aria-live="polite">
         <div className="round-actions">
           <button className="cta" type="button" onClick={game.playOrNext}>
             {game.listenLabel}
@@ -111,11 +118,7 @@ export function EarTrainingGame() {
               type="button"
               className="note-pad"
               onClick={() => game.submitGuess(note.id)}
-              disabled={
-                !game.hasPlayedRound ||
-                game.isAnswered ||
-                game.status === "over"
-              }
+              disabled={!game.hasPlayedRound || game.isAnswered || game.status === "over" || game.isPlaying}
             >
               {note.label}
             </button>

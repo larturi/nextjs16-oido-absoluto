@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { beginRound, createMatchState, LEVEL_TARGET_SCORE, scoreAnswer, shouldAdvanceLevel } from "@/domain/game/engine";
 import { getNotePoolForLevel } from "@/domain/game/progression";
+import { getModeHandler, PLAY_MODE_OPTIONS, PlayMode } from "@/domain/game/modes";
 import { migrateLegacyStorageV2ToV3 } from "@/domain/profile/migration";
 import {
   getOrCreateActiveProfileSnapshot,
@@ -21,7 +22,6 @@ import {
   MODE_OPTIONS,
   NoteConfig,
   NoteId,
-  pickRandomNote,
   SOUND_PROFILE_OPTIONS,
   SoundProfile,
 } from "@/lib/game";
@@ -34,6 +34,10 @@ type AudioBank = {
 
 const PRELOAD = "auto";
 const INITIAL_LIVES = 3;
+const PLAYBACK_GAP_MS = 220;
+const NOTE_FALLBACK_DURATION_MS = 950;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const buildAudioBank = (notes: NoteConfig[], soundProfile: SoundProfile): AudioBank => {
   const noteMap = new Map<NoteId, HTMLAudioElement>();
@@ -57,12 +61,17 @@ export const useEarTrainingGame = () => {
   const [playerName, setPlayerNameState] = useState(DEFAULT_PLAYER_NAME);
   const [nameDraft, setNameDraft] = useState(DEFAULT_PLAYER_NAME);
   const [mode, setMode] = useState<GameMode>(DEFAULT_MODE);
+  const [playMode, setPlayMode] = useState<PlayMode>("classic");
   const [soundProfile, setSoundProfileState] = useState<SoundProfile>(DEFAULT_SOUND_PROFILE);
   const [hardUnlockedLevel, setHardUnlockedLevel] = useState(1);
   const [highScore, setHighScoreState] = useState(0);
-  const [profileCreatedAt, setProfileCreatedAt] = useState<string | null>(null);
   const [progress, setProgress] = useState<ProgressState | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [roundInstruction, setRoundInstruction] = useState("Escucha una nota y elige tu respuesta.");
+  const [playbackSequence, setPlaybackSequence] = useState<NoteId[]>([]);
+  const [expectedSequence, setExpectedSequence] = useState<NoteId[]>([]);
+  const [sequenceProgress, setSequenceProgress] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [match, setMatch] = useState(() => createMatchState(1, INITIAL_LIVES));
 
   const notes = useMemo(() => getNotePoolForLevel(mode, match.level), [mode, match.level]);
@@ -78,8 +87,8 @@ export const useEarTrainingGame = () => {
     setPlayerNameState(snapshot.profile.name);
     setNameDraft(snapshot.profile.name);
     setMode(snapshot.profile.preferredMode);
+    setPlayMode(snapshot.profile.preferredPlayMode ?? "classic");
     setSoundProfileState(snapshot.profile.preferredSound);
-    setProfileCreatedAt(snapshot.profile.createdAt);
     setProgress(snapshot.progress);
     setHardUnlockedLevel(snapshot.progress.unlockedLevel);
     setHighScoreState(snapshot.progress.statsByMode[snapshot.profile.preferredMode].bestScore);
@@ -108,10 +117,50 @@ export const useEarTrainingGame = () => {
 
     try {
       await audio.play();
+
+      await new Promise<void>((resolve) => {
+        let done = false;
+        const finish = () => {
+          if (done) {
+            return;
+          }
+          done = true;
+          audio.removeEventListener("ended", finish);
+          resolve();
+        };
+
+        const timeoutMs =
+          Number.isFinite(audio.duration) && audio.duration > 0
+            ? Math.round(audio.duration * 1000) + 80
+            : NOTE_FALLBACK_DURATION_MS;
+
+        audio.addEventListener("ended", finish, { once: true });
+        window.setTimeout(finish, timeoutMs);
+      });
     } catch {
       // Ignore autoplay restrictions to keep UX responsive.
     }
   }, []);
+
+  const playSequence = useCallback(
+    async (sequence: NoteId[]) => {
+      if (sequence.length === 0) {
+        return;
+      }
+
+      setIsPlaying(true);
+
+      try {
+        for (const noteId of sequence) {
+          await playNote(noteId);
+          await sleep(PLAYBACK_GAP_MS);
+        }
+      } finally {
+        setIsPlaying(false);
+      }
+    },
+    [playNote],
+  );
 
   const playSfx = useCallback(async (result: "correct" | "wrong") => {
     const bank = audioBankRef.current;
@@ -129,6 +178,23 @@ export const useEarTrainingGame = () => {
     }
   }, []);
 
+  const playInputNote = useCallback((noteId: NoteId) => {
+    const bank = audioBankRef.current;
+    if (!bank) {
+      return;
+    }
+
+    const audio = bank.notes.get(noteId);
+    if (!audio) {
+      return;
+    }
+
+    audio.currentTime = 0;
+    void audio.play().catch(() => {
+      // Ignore interaction playback errors.
+    });
+  }, []);
+
   const persistCompletedMatch = useCallback(
     (attempts: number, score: number) => {
       if (attempts === 0) {
@@ -136,10 +202,10 @@ export const useEarTrainingGame = () => {
       }
 
       const accuracy = Math.round((score / attempts) * 100);
-      const progress = recordCompletedMatch(mode, accuracy);
-      setProgress(progress);
-      setHardUnlockedLevel(progress.unlockedLevel);
-      setHighScoreState(progress.statsByMode[mode].bestScore);
+      const nextProgress = recordCompletedMatch(mode, accuracy);
+      setProgress(nextProgress);
+      setHardUnlockedLevel(nextProgress.unlockedLevel);
+      setHighScoreState(nextProgress.statsByMode[mode].bestScore);
     },
     [mode],
   );
@@ -150,6 +216,10 @@ export const useEarTrainingGame = () => {
       const nextLevel = level ?? (mode === "hard" ? hardUnlockedLevel : 1);
       setMatch(createMatchState(nextLevel, INITIAL_LIVES));
       setStatusMessage(null);
+      setPlaybackSequence([]);
+      setExpectedSequence([]);
+      setSequenceProgress(0);
+      setRoundInstruction("Escucha una nota y elige tu respuesta.");
     },
     [hardUnlockedLevel, match.attempts, match.score, mode, persistCompletedMatch],
   );
@@ -166,19 +236,88 @@ export const useEarTrainingGame = () => {
       return;
     }
 
-    if (match.currentNoteId && !match.isAnswered) {
-      await playNote(match.currentNoteId);
+    if (isPlaying) {
       return;
     }
 
-    const next = pickRandomNote(notes, match.currentNoteId ?? undefined);
-    setMatch((prev) => beginRound(prev, next.id));
-    await playNote(next.id);
-  }, [match, mode, notes, playNote, resetMatch]);
+    if (match.currentNoteId && !match.isAnswered) {
+      await playSequence(playbackSequence);
+      return;
+    }
+
+    const challenge = getModeHandler(playMode).createChallenge({
+      notes,
+      difficulty: mode,
+      level: match.level,
+      previousAnswerId: match.currentNoteId ?? undefined,
+    });
+
+    setRoundInstruction(challenge.instruction);
+    setPlaybackSequence(challenge.playback);
+    setExpectedSequence(playMode === "memory-sequence" ? challenge.playback : [challenge.answerId]);
+    setSequenceProgress(0);
+    setMatch((prev) => beginRound(prev, challenge.answerId));
+    await playSequence(challenge.playback);
+  }, [isPlaying, match, mode, notes, playMode, playbackSequence, playSequence, resetMatch]);
 
   const submitGuess = useCallback(
     async (guess: NoteId) => {
-      if (!match.currentNoteId || !match.hasPlayedRound || match.isAnswered || match.status === "over") {
+      if (isPlaying || !match.currentNoteId || !match.hasPlayedRound || match.isAnswered || match.status === "over") {
+        return;
+      }
+      playInputNote(guess);
+      setStatusMessage(null);
+
+      if (playMode === "memory-sequence" && expectedSequence.length > 0) {
+        const expected = expectedSequence[sequenceProgress];
+
+        if (guess === expected) {
+          const isLast = sequenceProgress === expectedSequence.length - 1;
+
+          if (!isLast) {
+            const nextStep = sequenceProgress + 1;
+            setSequenceProgress(nextStep);
+            setStatusMessage(`Bien! Sigue con la secuencia (${nextStep + 1}/${expectedSequence.length}).`);
+            return;
+          }
+
+          const correctOutcome = scoreAnswer({ ...match, currentNoteId: expected }, expected);
+          let correctState = correctOutcome.next;
+
+          if (mode === "hard" && shouldAdvanceLevel(correctState.level, correctState.score)) {
+            const nextLevel = Math.min(correctState.level + 1, 5);
+            const nextProgress = updateUnlockedLevel(nextLevel);
+            setProgress(nextProgress);
+            setHardUnlockedLevel(nextProgress.unlockedLevel);
+
+            correctState = {
+              ...correctState,
+              level: nextLevel,
+              combo: 0,
+              multiplier: 1,
+            };
+            setStatusMessage(`Nivel ${nextLevel} desbloqueado!`);
+          }
+
+          const correctAccuracy = correctState.attempts > 0 ? Math.round((correctState.score / correctState.attempts) * 100) : 0;
+          const correctProgress = upsertSessionBest(mode, correctState.score, correctState.streak, correctAccuracy);
+          setProgress(correctProgress);
+          setHardUnlockedLevel(correctProgress.unlockedLevel);
+          setHighScoreState(correctProgress.statsByMode[mode].bestScore);
+          setMatch(correctState);
+          await playSfx("correct");
+          return;
+        }
+
+        const wrongOutcome = scoreAnswer({ ...match, currentNoteId: expected }, guess);
+        const wrongState = wrongOutcome.next;
+        const wrongAccuracy = wrongState.attempts > 0 ? Math.round((wrongState.score / wrongState.attempts) * 100) : 0;
+        const wrongProgress = upsertSessionBest(mode, wrongState.score, wrongState.streak, wrongAccuracy);
+        setProgress(wrongProgress);
+        setHardUnlockedLevel(wrongProgress.unlockedLevel);
+        setHighScoreState(wrongProgress.statsByMode[mode].bestScore);
+        setMatch(wrongState);
+        await playSfx("wrong");
         return;
       }
 
@@ -187,9 +326,9 @@ export const useEarTrainingGame = () => {
 
       if (outcome.wasCorrect && mode === "hard" && shouldAdvanceLevel(nextState.level, nextState.score)) {
         const nextLevel = Math.min(nextState.level + 1, 5);
-        const progress = updateUnlockedLevel(nextLevel);
-        setProgress(progress);
-        setHardUnlockedLevel(progress.unlockedLevel);
+        const nextProgress = updateUnlockedLevel(nextLevel);
+        setProgress(nextProgress);
+        setHardUnlockedLevel(nextProgress.unlockedLevel);
 
         nextState = {
           ...nextState,
@@ -201,15 +340,15 @@ export const useEarTrainingGame = () => {
       }
 
       const nextAccuracy = nextState.attempts > 0 ? Math.round((nextState.score / nextState.attempts) * 100) : 0;
-      const progress = upsertSessionBest(mode, nextState.score, nextState.streak, nextAccuracy);
+      const nextProgress = upsertSessionBest(mode, nextState.score, nextState.streak, nextAccuracy);
 
-      setProgress(progress);
-      setHardUnlockedLevel(progress.unlockedLevel);
-      setHighScoreState(progress.statsByMode[mode].bestScore);
+      setProgress(nextProgress);
+      setHardUnlockedLevel(nextProgress.unlockedLevel);
+      setHighScoreState(nextProgress.statsByMode[mode].bestScore);
       setMatch(nextState);
       await playSfx(outcome.wasCorrect ? "correct" : "wrong");
     },
-    [match, mode, playSfx],
+    [expectedSequence, isPlaying, match, mode, playInputNote, playMode, playSfx, sequenceProgress],
   );
 
   const savePlayer = useCallback(() => {
@@ -218,7 +357,6 @@ export const useEarTrainingGame = () => {
     setNameDraft(safeName);
 
     const snapshot = updateProfilePreferences({ name: safeName });
-    setProfileCreatedAt(snapshot.profile.createdAt);
     setProgress(snapshot.progress);
     setHardUnlockedLevel(snapshot.progress.unlockedLevel);
     setHighScoreState(snapshot.progress.statsByMode[mode].bestScore);
@@ -242,8 +380,34 @@ export const useEarTrainingGame = () => {
       setHighScoreState(snapshot.progress.statsByMode[nextMode].bestScore);
       setMatch(createMatchState(nextLevel, INITIAL_LIVES));
       setStatusMessage(null);
+      setPlaybackSequence([]);
+      setExpectedSequence([]);
+      setSequenceProgress(0);
     },
     [match.attempts, match.score, mode, persistCompletedMatch],
+  );
+
+  const changePlayMode = useCallback(
+    (nextPlayMode: PlayMode) => {
+      if (nextPlayMode === playMode) {
+        return;
+      }
+
+      setPlayMode(nextPlayMode);
+      updateProfilePreferences({ preferredPlayMode: nextPlayMode });
+      setMatch((prev) => ({
+        ...prev,
+        currentNoteId: null,
+        hasPlayedRound: false,
+        isAnswered: false,
+        lastResult: "idle",
+      }));
+      setPlaybackSequence([]);
+      setExpectedSequence([]);
+      setSequenceProgress(0);
+      setRoundInstruction("Escucha una nota y elige tu respuesta.");
+    },
+    [playMode],
   );
 
   const changeSoundProfile = useCallback(
@@ -273,7 +437,7 @@ export const useEarTrainingGame = () => {
         ? "Escuchar nota"
         : match.isAnswered
           ? "Siguiente nota"
-          : "Repetir nota";
+          : "Repetir audio";
 
   const feedback = (() => {
     if (statusMessage) {
@@ -285,7 +449,11 @@ export const useEarTrainingGame = () => {
     }
 
     if (!currentNote || match.lastResult === "idle") {
-      return "Escucha una nota y elige tu respuesta.";
+      if (playMode === "memory-sequence" && expectedSequence.length > 0 && match.hasPlayedRound && !match.isAnswered) {
+        return `Repite la secuencia: paso ${sequenceProgress + 1} de ${expectedSequence.length}.`;
+      }
+
+      return roundInstruction;
     }
 
     if (match.lastResult === "correct") {
@@ -306,6 +474,8 @@ export const useEarTrainingGame = () => {
   return {
     mode,
     modeOptions: MODE_OPTIONS,
+    playMode,
+    playModeOptions: PLAY_MODE_OPTIONS,
     soundProfile,
     soundProfileOptions: SOUND_PROFILE_OPTIONS,
     notes,
@@ -321,7 +491,6 @@ export const useEarTrainingGame = () => {
     level: match.level,
     levelTarget,
     pointsToNextLevel,
-    profileCreatedAt,
     totalGames,
     easyGames: easyStats?.games ?? 0,
     hardGames: hardStats?.games ?? 0,
@@ -335,11 +504,14 @@ export const useEarTrainingGame = () => {
     status: match.status,
     hasPlayedRound: match.hasPlayedRound,
     isAnswered: match.isAnswered,
+    isPlaying,
     feedback,
+    roundInstruction,
     listenLabel,
     setNameDraft,
     savePlayer,
     changeMode,
+    changePlayMode,
     changeSoundProfile,
     playOrNext,
     submitGuess,

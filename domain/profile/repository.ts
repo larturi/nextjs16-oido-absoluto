@@ -1,3 +1,4 @@
+import { PlayMode } from "@/domain/game/modes";
 import { DEFAULT_MODE, DEFAULT_PLAYER_NAME, DEFAULT_SOUND_PROFILE, GameMode, SoundProfile } from "@/lib/game";
 import { ModeStats, PlayerProfile, ProfileProgressSnapshot, ProgressState } from "@/domain/profile/types";
 
@@ -68,6 +69,7 @@ const createProfile = (
   name = DEFAULT_PLAYER_NAME,
   preferredMode: GameMode = DEFAULT_MODE,
   preferredSound: SoundProfile = DEFAULT_SOUND_PROFILE,
+  preferredPlayMode: PlayMode = "classic",
 ): PlayerProfile => {
   const timestamp = nowIso();
   return {
@@ -77,6 +79,7 @@ const createProfile = (
     updatedAt: timestamp,
     preferredMode,
     preferredSound,
+    preferredPlayMode,
   };
 };
 
@@ -107,6 +110,7 @@ const ensureSnapshot = (
   name = DEFAULT_PLAYER_NAME,
   preferredMode: GameMode = DEFAULT_MODE,
   preferredSound: SoundProfile = DEFAULT_SOUND_PROFILE,
+  preferredPlayMode: PlayMode = "classic",
 ): ProfileProgressSnapshot => {
   const activeId = getActiveProfileId();
 
@@ -119,7 +123,7 @@ const ensureSnapshot = (
     }
   }
 
-  const profile = createProfile(name, preferredMode, preferredSound);
+  const profile = createProfile(name, preferredMode, preferredSound, preferredPlayMode);
   const progress = createProgress(profile.id);
 
   setActiveProfileId(profile.id);
@@ -149,12 +153,14 @@ export const getOrCreateActiveProfileSnapshot = (
   name = DEFAULT_PLAYER_NAME,
   preferredMode: GameMode = DEFAULT_MODE,
   preferredSound: SoundProfile = DEFAULT_SOUND_PROFILE,
-): ProfileProgressSnapshot => ensureSnapshot(name, preferredMode, preferredSound);
+  preferredPlayMode: PlayMode = "classic",
+): ProfileProgressSnapshot => ensureSnapshot(name, preferredMode, preferredSound, preferredPlayMode);
 
 export const updateProfilePreferences = (updates: {
   name?: string;
   preferredMode?: GameMode;
   preferredSound?: SoundProfile;
+  preferredPlayMode?: PlayMode;
 }): ProfileProgressSnapshot => {
   const snapshot = ensureSnapshot();
   const nextProfile: PlayerProfile = {
@@ -162,6 +168,7 @@ export const updateProfilePreferences = (updates: {
     name: updates.name ?? snapshot.profile.name,
     preferredMode: updates.preferredMode ?? snapshot.profile.preferredMode,
     preferredSound: updates.preferredSound ?? snapshot.profile.preferredSound,
+    preferredPlayMode: updates.preferredPlayMode ?? snapshot.profile.preferredPlayMode,
     updatedAt: nowIso(),
   };
 

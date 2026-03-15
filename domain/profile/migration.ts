@@ -113,6 +113,7 @@ export const migrateLegacyStorageV2ToV3 = (): void => {
       name,
       preferredMode: mode,
       preferredSound: sound,
+      preferredPlayMode: snapshotWithLegacy.profile.preferredPlayMode ?? "classic",
       updatedAt: new Date().toISOString(),
     },
     progress: snapshotWithLegacy.progress,
