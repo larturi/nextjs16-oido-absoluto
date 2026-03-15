@@ -18,11 +18,11 @@
 
 ## Epic 3: Perfil y Progreso
 
-- [ ] T3.1 Crear modelo `PlayerProfile` y `ProgressState` v3.
-- [ ] T3.2 Crear repositorio local (`profile-repo`, `progress-repo`).
-- [ ] T3.3 Implementar migracion de storage v2 -> v3.
-- [ ] T3.4 Dashboard basico de progreso por jugador.
-- [ ] T3.5 Tests de migracion y lectura/escritura.
+- [x] T3.1 Crear modelo `PlayerProfile` y `ProgressState` v3.
+- [x] T3.2 Crear repositorio local (`profile-repo`, `progress-repo`).
+- [x] T3.3 Implementar migracion de storage v2 -> v3.
+- [x] T3.4 Dashboard basico de progreso por jugador.
+- [x] T3.5 Tests de migracion y lectura/escritura.
 
 ## Epic 4: Recompensas
 
@@ -69,3 +69,7 @@
 
 - 2026-03-15: completadas T1.1, T1.2, T1.3, T1.4, T2.4 y T5.2.
 - 2026-03-15: completada T1.5 con Vitest y pruebas unitarias en `tests/domain/game/engine.test.ts`.
+- 2026-03-15: completadas T3.1, T3.2 y T3.3 con modelo v3, repositorio local y migracion desde claves legacy.
+- 2026-03-15: completadas T3.4 y T3.5 con dashboard de progreso y tests de repositorio/migracion.
+- 2026-03-15: ajuste UX de layout sin scroll vertical, moviendo progreso a un tercer bloque de ancho completo.
+- 2026-03-15: layout desktop centrado (horizontal y vertical) para los tres bloques principales.

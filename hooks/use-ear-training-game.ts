@@ -3,6 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { beginRound, createMatchState, LEVEL_TARGET_SCORE, scoreAnswer, shouldAdvanceLevel } from "@/domain/game/engine";
 import { getNotePoolForLevel } from "@/domain/game/progression";
+import { migrateLegacyStorageV2ToV3 } from "@/domain/profile/migration";
+import {
+  getOrCreateActiveProfileSnapshot,
+  recordCompletedMatch,
+  updateProfilePreferences,
+  updateUnlockedLevel,
+  upsertSessionBest,
+} from "@/domain/profile/repository";
+import { ProgressState } from "@/domain/profile/types";
 import {
   DEFAULT_MODE,
   DEFAULT_PLAYER_NAME,
@@ -16,18 +25,6 @@ import {
   SOUND_PROFILE_OPTIONS,
   SoundProfile,
 } from "@/lib/game";
-import {
-  getGameMode,
-  getHardLevel,
-  getHighScore,
-  getPlayerName,
-  getSoundProfile,
-  setGameMode,
-  setHardLevel,
-  setHighScore,
-  setPlayerName,
-  setSoundProfile,
-} from "@/lib/storage";
 
 type AudioBank = {
   notes: Map<NoteId, HTMLAudioElement>;
@@ -61,7 +58,10 @@ export const useEarTrainingGame = () => {
   const [nameDraft, setNameDraft] = useState(DEFAULT_PLAYER_NAME);
   const [mode, setMode] = useState<GameMode>(DEFAULT_MODE);
   const [soundProfile, setSoundProfileState] = useState<SoundProfile>(DEFAULT_SOUND_PROFILE);
+  const [hardUnlockedLevel, setHardUnlockedLevel] = useState(1);
   const [highScore, setHighScoreState] = useState(0);
+  const [profileCreatedAt, setProfileCreatedAt] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ProgressState | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [match, setMatch] = useState(() => createMatchState(1, INITIAL_LIVES));
 
@@ -72,17 +72,18 @@ export const useEarTrainingGame = () => {
   const audioBankRef = useRef<AudioBank | null>(null);
 
   useEffect(() => {
-    const loadedName = getPlayerName();
-    const loadedMode = getGameMode();
-    const loadedSoundProfile = getSoundProfile();
-    const loadedLevel = loadedMode === "hard" ? getHardLevel() : 1;
+    migrateLegacyStorageV2ToV3();
+    const snapshot = getOrCreateActiveProfileSnapshot();
 
-    setPlayerNameState(loadedName);
-    setNameDraft(loadedName);
-    setMode(loadedMode);
-    setSoundProfileState(loadedSoundProfile);
-    setHighScoreState(getHighScore(loadedName, loadedMode));
-    setMatch(createMatchState(loadedLevel, INITIAL_LIVES));
+    setPlayerNameState(snapshot.profile.name);
+    setNameDraft(snapshot.profile.name);
+    setMode(snapshot.profile.preferredMode);
+    setSoundProfileState(snapshot.profile.preferredSound);
+    setProfileCreatedAt(snapshot.profile.createdAt);
+    setProgress(snapshot.progress);
+    setHardUnlockedLevel(snapshot.progress.unlockedLevel);
+    setHighScoreState(snapshot.progress.statsByMode[snapshot.profile.preferredMode].bestScore);
+    setMatch(createMatchState(snapshot.profile.preferredMode === "hard" ? snapshot.progress.unlockedLevel : 1, INITIAL_LIVES));
   }, []);
 
   useEffect(() => {
@@ -128,13 +129,29 @@ export const useEarTrainingGame = () => {
     }
   }, []);
 
+  const persistCompletedMatch = useCallback(
+    (attempts: number, score: number) => {
+      if (attempts === 0) {
+        return;
+      }
+
+      const accuracy = Math.round((score / attempts) * 100);
+      const progress = recordCompletedMatch(mode, accuracy);
+      setProgress(progress);
+      setHardUnlockedLevel(progress.unlockedLevel);
+      setHighScoreState(progress.statsByMode[mode].bestScore);
+    },
+    [mode],
+  );
+
   const resetMatch = useCallback(
     (level?: number) => {
-      const nextLevel = level ?? (mode === "hard" ? getHardLevel() : 1);
+      persistCompletedMatch(match.attempts, match.score);
+      const nextLevel = level ?? (mode === "hard" ? hardUnlockedLevel : 1);
       setMatch(createMatchState(nextLevel, INITIAL_LIVES));
       setStatusMessage(null);
     },
-    [mode],
+    [hardUnlockedLevel, match.attempts, match.score, mode, persistCompletedMatch],
   );
 
   const resetScore = useCallback(() => {
@@ -170,7 +187,10 @@ export const useEarTrainingGame = () => {
 
       if (outcome.wasCorrect && mode === "hard" && shouldAdvanceLevel(nextState.level, nextState.score)) {
         const nextLevel = Math.min(nextState.level + 1, 5);
-        setHardLevel(nextLevel);
+        const progress = updateUnlockedLevel(nextLevel);
+        setProgress(progress);
+        setHardUnlockedLevel(progress.unlockedLevel);
+
         nextState = {
           ...nextState,
           level: nextLevel,
@@ -180,22 +200,28 @@ export const useEarTrainingGame = () => {
         setStatusMessage(`Nivel ${nextLevel} desbloqueado!`);
       }
 
-      if (nextState.score > highScore) {
-        setHighScore(playerName, mode, nextState.score);
-        setHighScoreState(nextState.score);
-      }
+      const nextAccuracy = nextState.attempts > 0 ? Math.round((nextState.score / nextState.attempts) * 100) : 0;
+      const progress = upsertSessionBest(mode, nextState.score, nextState.streak, nextAccuracy);
 
+      setProgress(progress);
+      setHardUnlockedLevel(progress.unlockedLevel);
+      setHighScoreState(progress.statsByMode[mode].bestScore);
       setMatch(nextState);
       await playSfx(outcome.wasCorrect ? "correct" : "wrong");
     },
-    [highScore, match, mode, playSfx, playerName],
+    [match, mode, playSfx],
   );
 
   const savePlayer = useCallback(() => {
-    const safeName = setPlayerName(nameDraft);
+    const safeName = nameDraft.trim() || DEFAULT_PLAYER_NAME;
     setPlayerNameState(safeName);
     setNameDraft(safeName);
-    setHighScoreState(getHighScore(safeName, mode));
+
+    const snapshot = updateProfilePreferences({ name: safeName });
+    setProfileCreatedAt(snapshot.profile.createdAt);
+    setProgress(snapshot.progress);
+    setHardUnlockedLevel(snapshot.progress.unlockedLevel);
+    setHighScoreState(snapshot.progress.statsByMode[mode].bestScore);
   }, [mode, nameDraft]);
 
   const changeMode = useCallback(
@@ -204,15 +230,20 @@ export const useEarTrainingGame = () => {
         return;
       }
 
-      const persistedMode = setGameMode(nextMode);
-      const nextLevel = persistedMode === "hard" ? getHardLevel() : 1;
+      persistCompletedMatch(match.attempts, match.score);
+      setMode(nextMode);
+      updateProfilePreferences({ preferredMode: nextMode });
 
-      setMode(persistedMode);
-      setHighScoreState(getHighScore(playerName, persistedMode));
+      const snapshot = getOrCreateActiveProfileSnapshot();
+      const nextLevel = nextMode === "hard" ? snapshot.progress.unlockedLevel : 1;
+
+      setProgress(snapshot.progress);
+      setHardUnlockedLevel(snapshot.progress.unlockedLevel);
+      setHighScoreState(snapshot.progress.statsByMode[nextMode].bestScore);
       setMatch(createMatchState(nextLevel, INITIAL_LIVES));
       setStatusMessage(null);
     },
-    [mode, playerName],
+    [match.attempts, match.score, mode, persistCompletedMatch],
   );
 
   const changeSoundProfile = useCallback(
@@ -221,7 +252,8 @@ export const useEarTrainingGame = () => {
         return;
       }
 
-      setSoundProfileState(setSoundProfile(nextSoundProfile));
+      setSoundProfileState(nextSoundProfile);
+      updateProfilePreferences({ preferredSound: nextSoundProfile });
     },
     [soundProfile],
   );
@@ -267,6 +299,10 @@ export const useEarTrainingGame = () => {
   const pointsToNextLevel =
     mode === "hard" && levelTarget ? Math.max(0, levelTarget - match.score) : null;
 
+  const easyStats = progress?.statsByMode.easy;
+  const hardStats = progress?.statsByMode.hard;
+  const totalGames = (easyStats?.games ?? 0) + (hardStats?.games ?? 0);
+
   return {
     mode,
     modeOptions: MODE_OPTIONS,
@@ -285,6 +321,15 @@ export const useEarTrainingGame = () => {
     level: match.level,
     levelTarget,
     pointsToNextLevel,
+    profileCreatedAt,
+    totalGames,
+    easyGames: easyStats?.games ?? 0,
+    hardGames: hardStats?.games ?? 0,
+    easyAccuracyAvg: easyStats?.accuracyAvg ?? 0,
+    hardAccuracyAvg: hardStats?.accuracyAvg ?? 0,
+    easyBestStreak: easyStats?.bestStreak ?? 0,
+    hardBestStreak: hardStats?.bestStreak ?? 0,
+    hardUnlockedLevel,
     accuracy,
     lastResult: match.lastResult,
     status: match.status,

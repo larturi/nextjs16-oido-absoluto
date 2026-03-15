@@ -191,6 +191,49 @@ button {
   font-size: 0.9rem;
 }
 
+.progress-panel {
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(10, 14, 34, 0.62);
+}
+
+.progress-panel-wide {
+  grid-column: 1 / -1;
+}
+
+.progress-panel h2 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.progress-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.progress-grid article {
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(8, 12, 30, 0.7);
+}
+
+.progress-grid span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.progress-grid strong {
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+
 .game-card {
   display: grid;
   gap: 14px;
@@ -305,18 +348,30 @@ button {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 24px;
+    padding: 16px;
+    overflow: hidden;
   }
 
   .arcade-shell {
+    height: calc(100vh - 32px);
     grid-template-columns: 1fr 1.35fr;
+    grid-template-rows: minmax(0, 1fr) auto;
     align-items: stretch;
     margin: 0;
   }
 
   .hud-card,
   .game-card {
-    min-height: 520px;
     height: 100%;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .progress-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

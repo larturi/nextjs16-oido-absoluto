@@ -88,6 +88,7 @@ export function EarTrainingGame() {
               : `Faltan ${game.pointsToNextLevel} puntos para el siguiente nivel.`}
           </p>
         )}
+
       </section>
 
       <section className="game-card" aria-live="polite">
@@ -119,6 +120,36 @@ export function EarTrainingGame() {
               {note.label}
             </button>
           ))}
+        </div>
+      </section>
+
+      <section className="progress-panel progress-panel-wide" aria-label="Progreso del jugador">
+        <h2>Progreso</h2>
+        <div className="progress-grid">
+          <article>
+            <span>Partidas</span>
+            <strong>{game.totalGames}</strong>
+          </article>
+          <article>
+            <span>Nivel desbloqueado</span>
+            <strong>{game.hardUnlockedLevel}</strong>
+          </article>
+          <article>
+            <span>Normal: accuracy</span>
+            <strong>{game.easyAccuracyAvg}%</strong>
+          </article>
+          <article>
+            <span>Dificil: accuracy</span>
+            <strong>{game.hardAccuracyAvg}%</strong>
+          </article>
+          <article>
+            <span>Normal: mejor racha</span>
+            <strong>{game.easyBestStreak}</strong>
+          </article>
+          <article>
+            <span>Dificil: mejor racha</span>
+            <strong>{game.hardBestStreak}</strong>
+          </article>
         </div>
       </section>
     </main>
