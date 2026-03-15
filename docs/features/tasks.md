@@ -79,3 +79,4 @@
 - 2026-03-15: ajuste de layout para que el piano en desktop ocupe todo el alto disponible del contenedor de juego.
 - 2026-03-15: ajuste de encastre desktop: mantiene acciones+feedback arriba y el piano llena solo el bloque inferior.
 - 2026-03-15: ajuste de proporciones desktop: piano ~30% menos alto y mayor presencia para acciones+feedback.
+- 2026-03-15: microajuste visual del piano: teclas negras un poco mas finitas para mejorar lectura en desktop.
